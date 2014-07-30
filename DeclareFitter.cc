@@ -82,7 +82,7 @@ void DeclareFitter::setupGaus( ROOT::Fit::FitResult result, char* whichFit ){
   	printf("%s\n%s\n \tf(x) = quadratic bgkd + gaussian \n", section, section);
   	printf("\tFixed Parameters: Htail=tau=0\n %s\n%s\n", section, section);
 	}
-  if(strcmp(whichFit,"gaus_fixedQuad")==0){
+  if(strcmp(whichFit,"gaus_const")==0){
   	printf("%s\n%s\n\tf(x) = constant bgkd + gaussian \n", section, section);
   	printf("\tFixed Parameters: beta=gamma=Htail=tau=0\n %s\n%s\n", section, section);
 	for(int i=0; i<numberPeaksToFit; i++) {
@@ -108,31 +108,51 @@ void DeclareFitter::setupTail( ROOT::Fit::FitResult resultH, char* whichFitH ){
   for(int i=0; i<numberPeaksToFit; i++){
 	fparH[7+i*6] = resultH.Parameter(7+i*6); //mu
 	fparH[8+i*6] = resultH.Parameter(8+i*6); //area
-	fparH[10+i*6] = resultH.Parameter(10+i*6); //alpha (yint)
- 	fparH[9+i*6] = 0.005; //Htail
-	fparH[11+i*6] = 0.0; //beta (slope)
-	fparH[12+i*6] = 0.0; //gamma (quad)
+ 	fparH[9+i*6] = resultH.Parameter(9+i*6); //Hstep
+	fparH[10+i*6] = resultH.Parameter(10+i*6); //tempHist->GetBinContent(tempHist->FindBin(*(setOfRanges+2*i))); //alpha (yint)
+	fparH[11+i*6] = resultH.Parameter(11+i*6); //0.0; //beta (slope)
+	fparH[12+i*6] = resultH.Parameter(12+i*6); //0.0; //gamma (quad)
 	}
   
   printf("%s\n%s\n\tf(x) = quadratic bgkd + step bkgd + gaussian + LE tail \n", section, section);
   printf("\tFixed Parameters: Htail's slope and y-int \n");
-  if(strncmp(whichFitH,"full_fixedHtail_fixedQuad",25)==0){
+  fixedParsH.push_back(5); fixedParsH.push_back(6);
+  if(strncmp(whichFitH,"full_fixedHtail_const",21)==0){
     printf("\tFixed Parameters: beta=gamma=0 \n", section, section);
   	for(int i=0; i<(sizeof(par5)/sizeof(*par5)); i++){
   		sprintf(tallyFinder,"%d",i);
-  		if(whichFitH[27] == tallyFinder[0]) fparH[5] = par5[i];
+  		if(whichFitH[23] == tallyFinder[0]) fparH[5] = par5[i];
   		}  	
 	for(int i=0; i<numberPeaksToFit; i++) {
+	    fparH[10+i*6] = tempHist->GetBinContent(tempHist->FindBin(*(setOfRanges+2*i)));
+	    fparH[11+i*6] = 0.;
+	    fparH[12+i*6] = 0.;
 		fixedParsH.push_back(11+i*6); //beta (slope)
 		fixedParsH.push_back(12+i*6); //gamma (quad)
 		}
 	}
-  else if(strncmp(whichFitH,"full_fixedHtail_",16)==0){
-  	for(int i=0; i<(sizeof(par5)/sizeof(*par5)); i++){
+  else{
+    if(strncmp(whichFitH,"full_fixedHtail_linear",22)==0){
+      printf("\tFixed Parameters: gamma=0 \n", section, section);
+      for(int i=0; i<(sizeof(par5)/sizeof(*par5)); i++){
+    	sprintf(tallyFinder,"%d",i);
+    	if(whichFitH[24] == tallyFinder[0]) fparH[5] = par5[i];
+    	}  	
+  	  for(int i=0; i<numberPeaksToFit; i++) {
+  	    fparH[10+i*6] = tempHist->GetBinContent(tempHist->FindBin(*(setOfRanges+2*i)));
+  	    fparH[11+i*6] = 0.;
+  	    fparH[12+i*6] = 0.;
+  		fixedParsH.push_back(12+i*6); //gamma (quad)
+  		}
+  	  }
+    else{ //full_fixedHtail_0n w/quad bkgd
+  	  for(int i=0; i<(sizeof(par5)/sizeof(*par5)); i++){
   		sprintf(tallyFinder,"%d",i);
-  		if(whichFitH[27] == tallyFinder[0]) fparH[5] = par5[i];
+  		if(whichFitH[18] == tallyFinder[0]) fparH[5] = par5[i];
   		}  	
-	} 
+	  }
+	}
+	 
   if(fparH[5]==0.){
     fparH[6] = 0.;
     fparH[3] = 0.; fparH[4] = 0.;
@@ -144,6 +164,7 @@ void DeclareFitter::setupTail( ROOT::Fit::FitResult resultH, char* whichFitH ){
   const int arraySizeH = fixedParsH.size();
   fitter.Config().SetParamsSettings(Npar,fparH);
   //fitter.Config().ParSettings(5).SetLimits(0,1); // 1 > y-int of Htail > 0
+  fitter.Config().ParSettings(3).SetLimits(0,1); // 1 > y-int of tau > 0
   for(int i=0; i<arraySizeH; i++) fitter.Config().ParSettings(fixedParsH[i]).Fix();
   fixedParsH.clear();
   }
@@ -152,48 +173,24 @@ void DeclareFitter::setupAll( ROOT::Fit::FitResult resultA, char* whichFitA ){
   double fparA[Npar];
   for(int i=0; i<Npar; i++) fparA[i] = resultA.Parameter(i);
   
-  if((fparA[5]==0.) && (fparA[6]==0.)){
-    printf("%s\n%s\nFit converged when Htail was fixed to zero. Keeping it (and tau) fixed to zero.\n", section, section);
-    printf("\tf(x) = quadratic bgkd + step bkgd + gaussian \n");
-    fparA[3] = 0.; fparA[4] = 0.;
-    fixedParsA.push_back(3); fixedParsA.push_back(4);
-    fixedParsA.push_back(5); fixedParsA.push_back(6);
-    if(strcmp(whichFitA,"full")==0) printf("\tFixed Parameters: Htail=tau=0 \n %s\n%s\n", section, section);
-    if(strcmp(whichFitA,"full_fixedQuad")==0){
-      printf("\tFixed Parameters: Htail=tau=beta=gamma=0 \n %s\n%s\n", section, section);
-  	  for(int i=0; i<numberPeaksToFit; i++) {
-  	    fparA[11+i*6] = 0.0; //beta (slope)
-  		fparA[12+i*6] = 0.0; //gamma (quad)
-		fixedParsA.push_back(11+i*6); 
-		fixedParsA.push_back(12+i*6); 
-  		}
-      }
-    if(strcmp(whichFitA,"full_fixedQuadQuad")==0){
-  	  printf("\tFixed Parameters: Htail=tau=gamma=0 \n %s\n%s\n", section, section);
-  	  for(int i=0; i<numberPeaksToFit; i++) fixedParsA.push_back(12+i*6); //gamma (quad)
-  	  }
-    }
-  else{
-    printf("%s\n%s\n\tf(x) = quadratic bgkd + step bkgd + gaussian + LE tail \n", section, section);
-    if(strcmp(whichFitA,"full")==0) printf("\tFixed Parameters: none \n %s\n%s\n", section, section);
-    if(strcmp(whichFitA,"full_fixedQuad")==0){
-  	  printf("\tFixed Parameters: beta=gamma=0 \n %s\n%s\n", section, section);
-  	  for(int i=0; i<numberPeaksToFit; i++) {
-  		fparA[11+i*6] = 0.0; //beta (slope)
-  		fparA[12+i*6] = 0.0; //gamma (quad)
-		fixedParsA.push_back(11+i*6); 
-		fixedParsA.push_back(12+i*6); 
-  		}
-  	  } 
-    if(strcmp(whichFitA,"full_fixedQuadQuad")==0){
-  	  printf("\tFixed Parameters: gamma=0 \n %s\n%s\n", section, section);
-  	  for(int i=0; i<numberPeaksToFit; i++) fixedParsA.push_back(12+i*6); //gamma (quad)
-  	  }
-  	}
+  printf("%s\n%s\n\tf(x) = quadratic bgkd + step bkgd + gaussian + LE tail \n", section, section);
+  if(strcmp(whichFitA,"full")==0) printf("\tFixed Parameters: none \n %s\n%s\n", section, section);
+  if(strcmp(whichFitA,"full_const")==0){
+    printf("\tFixed Parameters: beta=gamma=0 \n %s\n%s\n", section, section);
+    for(int i=0; i<numberPeaksToFit; i++) {
+	  fparA[11+i*6] = 0.0; //beta (slope)
+	  fparA[12+i*6] = 0.0; //gamma (quad)
+	  fixedParsA.push_back(11+i*6); 
+	  fixedParsA.push_back(12+i*6); 
+	  }
+	} 
+  if(strcmp(whichFitA,"full_linear")==0){
+	printf("\tFixed Parameters: gamma=0 \n %s\n%s\n", section, section);
+	for(int i=0; i<numberPeaksToFit; i++) fixedParsA.push_back(12+i*6); //gamma (quad)
+	}
 
   const int arraySizeA = fixedParsA.size();
   fitter.Config().SetParamsSettings(Npar,fparA); //See if fitter.Config().SetFromFitResult(resultA) works
-  //fitter.Config().ParSettings(5).SetLimits(0,1); // 1 > y-int of Htail > 0
   for(int i=0; i<arraySizeA; i++) fitter.Config().ParSettings(fixedParsA[i]).Fix();
   fixedParsA.clear();
   } 

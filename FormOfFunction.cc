@@ -19,14 +19,17 @@ FormOfFunction::FormOfFunction(char* whichFit, char* whichFunc){
   	HtailYintPar = 5; HtailSlopePar = 6;
   	muPar = 7; areaPar = 100; HstepPar = 100;
   	bkgdConstPar = 100; bkgdLinPar = 100; bkgdQuadPar = 100;}
-  
-  if(strncmp(whichFit,"full",4)==0){
+    	
+  int length = strlen(whichFit);	  
+  if( (strncmp(whichFit,"gaus",4)==0) || 
+  	  ((strncmp(whichFit,"full_fixedHtail_",16)==0) && (whichFit[length-1]=='0')) ) sprintf(centroidEq,"[%d]", muPar);
+  //if(strncmp(whichFit,"full",4)==0){
+  else{
 	  sprintf(bTerm,"1.+[%d]*[%d]+[%d]*[%d]", tauSlopePar, HtailYintPar, tauYintPar, HtailSlopePar);
 	  sprintf(sqrtTerm,"pow(%s,2.) - 4.*[%d]*[%d]*([%d]*[%d]-[%d])", 
 						bTerm, HtailSlopePar, tauSlopePar, HtailYintPar, tauYintPar, muPar);
 	  sprintf(centroidEq,"(-(%s) + sqrt(%s))/(2.*[%d]*[%d])", bTerm, sqrtTerm, HtailSlopePar, tauSlopePar);
-	  }  	
-  if(strncmp(whichFit,"gaus",4)==0) sprintf(centroidEq,"[%d]", muPar);
+	  }
     
   sprintf(sigma2Eq,"(pow([%d],2.)+%s*pow([%d],2.)+pow(%s*[%d],2.))", 
   						sigmaPar0, centroidEq, sigmaPar1, centroidEq, sigmaPar2);

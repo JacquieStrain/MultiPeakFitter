@@ -41,7 +41,7 @@ class MultiPeakFitter
   	MultiPeakFitter( TH1D &fitHisto, int numPeaks, int* fitRanges );
   	void chooseFit(char* fitChoice);
   	void previousFitResults( ROOT::Fit::FitResult pResult );
-  	PrintResults doFit();
+  	PrintResults doFit(int finalFit=0);
   	ROOT::Fit::FitResult results;
   	int minimizerFlag;
   	int hTailFlag;

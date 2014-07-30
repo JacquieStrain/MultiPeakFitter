@@ -44,7 +44,8 @@ class PrintResults
   TH1D** hArray;
   
   public:
-	PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], TF1* funcArray[], int* rangeArray );
+	//PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], TF1* funcArray[], int* rangeArray );
+	PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], int* rangeArray );
 	PrintResults ( );
 	void PrintFitResults();
 };

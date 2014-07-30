@@ -14,7 +14,7 @@ void MultiPeakFitter::previousFitResults( ROOT::Fit::FitResult pResult ){
 	previousResult = pResult;
 	}
 	
-PrintResults MultiPeakFitter::doFit(){
+PrintResults MultiPeakFitter::doFit(int finalFit){
 
   TH1D** histo = new TH1D*[numberPeaksToFit];
   TF1** ff = new TF1*[numberPeaksToFit];
@@ -78,9 +78,8 @@ PrintResults MultiPeakFitter::doFit(){
   else if(strncmp(fitKind,"full",4)==0) fFitter.setupAll(previousResult, fitKind);
   const int Npar = fFitter.fitter.Config().NPar();
   fFitter.fitter.Config().MinimizerOptions().SetPrintLevel(1);
-  //fitter.Config().SetMinimizer("Minuit2","Migrad"); //original but getting error on it - look into this 
-  fFitter.fitter.Config().SetMinimizer("Minuit","Migrad"); 
-  //fFitter.fitter.Config().SetMinimizer("Minuit","Simplex"); 
+  if(finalFit==1) fFitter.fitter.Config().SetMinimizer("Minuit","Minos"); 
+  else fFitter.fitter.Config().SetMinimizer("Minuit","Migrad"); 
   fFitter.fitter.FitFCN(Npar,globalLL,0,dataSize,false); // fit FCN function directly 
   
   ROOT::Math::Minimizer* minimizer = fFitter.fitter.GetMinimizer();
@@ -107,8 +106,9 @@ PrintResults MultiPeakFitter::doFit(){
     hTailFlag = 1;
     printf("max hTail value = %.2f. Rejecting Fit.\n", maxHtail);
     }
-    	
-  PrintResults pfr(fitKind, results, histo, ff, arrayRanges);
+  
+  //PrintResults pfr(fitKind, results, histo, ff, arrayRanges);
+  PrintResults pfr(fitKind, results, histo, arrayRanges);
   return pfr;
   }
   

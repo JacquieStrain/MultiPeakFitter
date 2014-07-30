@@ -1,11 +1,12 @@
 #include "PrintResults.hh"
 
-PrintResults::PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], TF1* funcArray[], int* rangeArray ){
+//PrintResults::PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], TF1* funcArray[], int* rangeArray ){
+PrintResults::PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], int* rangeArray ){
 
   resultToPrint = r2p;
   numberPeaksToFit = (resultToPrint.NPar()-7)/6;  
   hArray = histArray;
-  fArray = funcArray;
+  //fArray = funcArray;
   rArray = rangeArray;
   int length = strlen(ffitOpt); 
   for(int i=0; i<(length+1); i++) fitOpt[i] = ffitOpt[i];
@@ -243,6 +244,7 @@ void PrintResults::PrintFitResults(){
   bkgdS = new TF1*[numberPeaksToFit];
   signalG = new TF1*[numberPeaksToFit];
   signalT = new TF1*[numberPeaksToFit];
+  fArray = new TF1*[numberPeaksToFit];
   for(int i=0; i<numberPeaksToFit; i++){
   	bkgdQ[i] = new TF1("",
   		"[0]+[1]*x+[2]*pow(x,2.)", rArray[2*i], rArray[2*i+1]);
@@ -252,7 +254,9 @@ void PrintResults::PrintFitResults(){
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*(1-[7])/([6]*sqrt(2.*TMath::Pi()))*exp(-0.5*pow((x-[5])/[6],2.))", rArray[2*i], rArray[2*i+1]);
   	signalT[i] = new TF1("",
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*[7]/(2*[8])*exp((x-[5])/[8]+pow([6]/(sqrt(2.)*[8]),2.))*TMath::Erfc((x-[5])/(sqrt(2.)*[6])+[6]/([8]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
-  	
+  	fArray[i] = new TF1("",
+  		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*(1-[7])/([6]*sqrt(2.*TMath::Pi()))*exp(-0.5*pow((x-[5])/[6],2.))+[3]*[7]/(2*[8])*exp((x-[5])/[8]+pow([6]/(sqrt(2.)*[8]),2.))*TMath::Erfc((x-[5])/(sqrt(2.)*[6])+[6]/([8]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
+  		
   	bkgdQ[i]->FixParameter(0, alpha[i]);
   	bkgdQ[i]->FixParameter(1, beta[i]);
   	bkgdQ[i]->FixParameter(2, gamma[i]);
@@ -283,16 +287,33 @@ void PrintResults::PrintFitResults(){
   	signalT[i]->FixParameter(6, Sigma[i]);
   	signalT[i]->FixParameter(7, Htail[i]);
   	signalT[i]->FixParameter(8, Tau[i]);
+  	
+  	fArray[i]->FixParameter(0, alpha[i]);
+  	fArray[i]->FixParameter(1, beta[i]);
+  	fArray[i]->FixParameter(2, gamma[i]);
+  	fArray[i]->FixParameter(3, Area[i]);
+  	fArray[i]->FixParameter(4, Hstep[i]);
+  	fArray[i]->FixParameter(5, Mu[i]);
+  	fArray[i]->FixParameter(6, Sigma[i]);
+  	fArray[i]->FixParameter(7, Htail[i]);
+  	fArray[i]->FixParameter(8, Tau[i]);
   	}
   
+  /*int ipar[numberPeaksToFit][13];
+  fArray = new TF1*[numberPeaksToFit];*/
   for(int i=0; i<numberPeaksToFit; i++){
+    //std::cout<<fArray->GetParameter(0)<<std::endl;
   	c1->cd(i+1);
   	//ff[i]->SetFitResult( resultToPrint, parij.iparIJ[i] );
   	//ff[i]->SetLineColor(12);
+  	/*for(int j=0; j<7; j++) ipar[i][j] = j;
+  	for(int j=7; j<13; j++) ipar[i][j] = j+i*6;
+  	fArray[i]->SetFitResult( resultToPrint, ipar[i]);*/
   	bkgdQ[i]->SetLineColor(50); //salmon
   	bkgdS[i]->SetLineColor(39); //gray
   	signalG[i]->SetLineColor(30); //green
   	signalT[i]->SetLineColor(28); //brown
+  	fArray[i]->SetLineColor(9); //purple
   	hArray[i]->GetListOfFunctions()->Add(fArray[i]);
   	hArray[i]->GetListOfFunctions()->Add(bkgdQ[i]);
   	hArray[i]->GetListOfFunctions()->Add(bkgdS[i]);

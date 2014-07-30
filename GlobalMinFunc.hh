@@ -17,7 +17,6 @@ class GlobalMinFunc
 		double mf_tot = 0;
 		double mf_j;	
 		for(int k=0; k<fHowMany; k++){
-			//for (int m = 0; m < 13; m++) parameters[m] = par[ parij.iparIJ[k][m] ];
 			for (int m=0; m<7; m++) parameters[m] = par[m]; //common parameters to all pks
 			for (int m=7; m<13; m++) parameters[m] = par[m+6*k]; //unique parameters for each pk
 			fMF_j = (*(Psmf+k)).fMF_i; 
