@@ -64,6 +64,8 @@ PrintResults MultiPeakFitter::doFit(int finalFit){
   //ROOT::Math::IMultiGenFunction * fMF_i cannot be put into an array, so the class
   //SingleMinFunc defines fMF_i for each peak and we create an array of SingleMinFunc.
   for(int i=0; i<numberPeaksToFit; i++){
+	//smf_ll.push_back(SingleMinFunc(*lls[i], i));
+	//smf_cq.push_back(SingleMinFunc(*cqs[i], i));
 	smf_ll[i] = SingleMinFunc(*lls[i], i);
 	smf_cq[i] = SingleMinFunc(*cqs[i], i);
 	}
@@ -74,6 +76,9 @@ PrintResults MultiPeakFitter::doFit(int finalFit){
   GlobalMinFunc globalCQ(smf_cq, numberPeaksToFit);
   
   DeclareFitter fFitter(*detectorHist, numberPeaksToFit, arrayRanges);  
+  /*if(strncmp(fitKind,"gaus",4)==0) fFitter.setupGaus(previousResult, fitKind);
+  if(strncmp(fitKind,"full_fixedHtail",15)==0) fFitter.setupTail(previousResult, fitKind); 
+  else if(strncmp(fitKind,"full",4)==0) fFitter.setupAll(previousResult, fitKind);*/
   if(fitKind.compare(0,4,"gaus")==0) fFitter.setupGaus(previousResult, fitKind);
   if(fitKind.compare(0,15,"full_fixedHtail")==0) fFitter.setupTail(previousResult, fitKind); 
   else if(fitKind.compare(0,4,"full")==0) fFitter.setupAll(previousResult, fitKind);
@@ -108,6 +113,7 @@ PrintResults MultiPeakFitter::doFit(int finalFit){
     printf("max hTail value = %.2f. Rejecting Fit.\n", maxHtail);
     }
   
+  //PrintResults pfr(fitKind, results, histo, ff, arrayRanges);
   PrintResults pfr(fitKind, results, histo, arrayRanges);
   return pfr;
   }

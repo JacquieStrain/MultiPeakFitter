@@ -169,6 +169,7 @@ void DeclareFitter::setupTail( ROOT::Fit::FitResult resultH, std::string whichFi
   fixedParsH.clear();
   }
 
+//void DeclareFitter::setupAll( ROOT::Fit::FitResult resultA, char* whichFitA ){
 void DeclareFitter::setupAll( ROOT::Fit::FitResult resultA, std::string whichFitA){
   double fparA[Npar];
   for(int i=0; i<Npar; i++) fparA[i] = resultA.Parameter(i);

@@ -11,6 +11,7 @@
 #include "TCanvas.h"
 #include "TStyle.h"
 #include "TList.h"
+//#include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TFile.h"
 #include "TMatrixTSym.h"
@@ -33,7 +34,7 @@ class PrintResults
   double dTdbH, dTdbT, dTdmH, dTdmT, dTdMu;
   double htailComp, mH, mT, Numerator, s0, s1, s2, sqrtTerm, tauComp;
  
-  char histTitle[10], outputFileName[100]; 
+  char histTitle[10], outputFileName[100]; //fitOpt[50],
   std::string fitOpt;
   
   ROOT::Fit::FitResult resultToPrint;
@@ -44,6 +45,8 @@ class PrintResults
   TH1D** hArray;
   
   public:
+	//PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], TF1* funcArray[], int* rangeArray );
+	//PrintResults( char* ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], int* rangeArray );
 	PrintResults( std::string ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], int* rangeArray );
 	PrintResults ( );
 	void PrintFitResults();

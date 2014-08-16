@@ -1,6 +1,8 @@
 #include "FormOfFunction.hh"
 
+//FormOfFunction::FormOfFunction(char* whichFit, char* whichFunc){
 FormOfFunction::FormOfFunction(std::string whichFit, std::string whichFunc){
+  //if((strcmp(whichFunc,"fit")==0)){
   if(whichFunc.compare("fit")==0){
   	sigmaPar0 = 0; sigmaPar1 = 1; sigmaPar2 = 2;
   	tauYintPar = 3; tauSlopePar = 4; 
@@ -8,19 +10,24 @@ FormOfFunction::FormOfFunction(std::string whichFit, std::string whichFunc){
   	muPar = 7; areaPar = 8; HstepPar = 9;
   	bkgdConstPar = 10; bkgdLinPar = 11; bkgdQuadPar = 12; }
   if((whichFunc.compare("centroid")==0) || (whichFunc.compare("tau")==0) || (whichFunc.compare("Htail")==0)){
+  //if((strcmp(whichFunc,"centroid")==0) || (strcmp(whichFunc,"tau")==0) || (strcmp(whichFunc,"Htail")==0)){
     sigmaPar0 = 100; sigmaPar1 = 100; sigmaPar2 = 100;
   	tauYintPar = 0; tauSlopePar = 1; 
   	HtailYintPar = 2; HtailSlopePar = 3;
   	muPar = 4; areaPar = 100; HstepPar = 100;
   	bkgdConstPar = 100; bkgdLinPar = 100; bkgdQuadPar = 100; }
+  //if(strcmp(whichFunc,"sigma")==0){
   if(whichFunc.compare("sigma")==0){
     sigmaPar0 = 0; sigmaPar1 = 1; sigmaPar2 = 2;
   	tauYintPar = 3; tauSlopePar = 4; 
   	HtailYintPar = 5; HtailSlopePar = 6;
   	muPar = 7; areaPar = 100; HstepPar = 100;
   	bkgdConstPar = 100; bkgdLinPar = 100; bkgdQuadPar = 100;}
-    	 
+    	
+  //int length = strlen(whichFit);	 
   int length = whichFit.size(); 
+  //if( (strncmp(whichFit,"gaus",4)==0) || 
+  //	  ((strncmp(whichFit,"full_fixedHtail_",16)==0) && (whichFit[length-1]=='0')) ) sprintf(centroidEq,"[%d]", muPar);
   if(whichFit.compare(0,4,"gaus")==0 ||
   		((whichFit.compare(0,16,"full_fixedHtail_")==0) && (whichFit[length-1]=='0')) ) sprintf(centroidEq,"[%d]", muPar);
   else{
@@ -52,6 +59,7 @@ FormOfFunction::FormOfFunction(std::string whichFit, std::string whichFunc){
   sprintf(bkgdQuad,"[%d]+[%d]*x+[%d]*pow(x,2.)", bkgdConstPar, bkgdLinPar, bkgdQuadPar);
   sprintf(sigmaEq, "sqrt(%s)", sigma2Eq);
 			  
+  //if(strcmp(whichFunc,"fit")==0){
   if(whichFunc.compare("fit")==0){
   	strcpy(function,bkgdQuad);
   	strcat(function,"+");

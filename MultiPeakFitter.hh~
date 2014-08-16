@@ -32,6 +32,7 @@ class MultiPeakFitter
   int* arrayRanges;
   double minHtail, maxHtail;
   TH1D* detectorHist;
+  //char fitKind[50];
   std::string fitKind;
   char function[10000]; 
   DeclareFitter fFitter;
@@ -39,6 +40,7 @@ class MultiPeakFitter
   
   public:
   	MultiPeakFitter( TH1D &fitHisto, int numPeaks, int* fitRanges );
+  	//void chooseFit(char* fitChoice);
   	void chooseFit(std::string fitChoice);
   	void previousFitResults( ROOT::Fit::FitResult pResult );
   	PrintResults doFit(int finalFit=0);

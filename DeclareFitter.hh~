@@ -35,6 +35,9 @@ class DeclareFitter
   public:
 	DeclareFitter( TH1D &histo, int numPeaks, int* ranges );
 	DeclareFitter( );
+	/*void setupGaus( ROOT::Fit::FitResult result, char* whichFit );
+	void setupTail( ROOT::Fit::FitResult resultH, char* whichFitH );
+	void setupAll( ROOT::Fit::FitResult resultA, char* whichFitA );*/
 	void setupGaus( ROOT::Fit::FitResult result, std::string whichFit );
 	void setupTail( ROOT::Fit::FitResult resultH, std::string whichFitH );
 	void setupAll( ROOT::Fit::FitResult resultA, std::string whichFitA );

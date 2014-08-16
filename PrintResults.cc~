@@ -308,7 +308,8 @@ void PrintResults::PrintFitResults(){
   	hArray[i]->GetListOfFunctions()->Add(signalT[i]);
   	hArray[i]->Draw();
   	}
-
+  
+  //sprintf(outputFileName, "%s_fit.png", fitOpt);
   sprintf(outputFileName, "%s_fit.png", fitOpt.c_str());
   c1->Print(outputFileName);
   c1->Clear();

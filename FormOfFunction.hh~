@@ -36,5 +36,6 @@ class FormOfFunction
   	int funcSize;
   	char ffunction[3000];
   	FormOfFunction(std::string whichFit, std::string whichFunc);
+  	//FormOfFunction(char* whichFit, char* whichFunc);
 };
 #endif
