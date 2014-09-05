@@ -24,8 +24,7 @@ void DeclareFitter::setupGaus( ROOT::Fit::FitResult result, std::string whichFit
       minR = std::min(minR, 1.*setOfRanges[2*j]);
       maxR = std::max(maxR, 1.*setOfRanges[2*j+1]);
       tempHist->GetXaxis()->SetRangeUser(*(setOfRanges+2*j),*(setOfRanges+2*j+1));
-      for(int i=0; i<20; i++) yintApprox[j] += tempHist->GetBinContent(
-    										   tempHist->FindBin(*(setOfRanges+2*j+i)) );
+      for(int i=0; i<20; i++) yintApprox[j] += tempHist->GetBinContent( tempHist->FindBin(*(setOfRanges+2*j)+i*0.1) );
    	  yintApprox[j] /= 20.;
    	  binWithMax = tempHist->GetMaximumBin();
    	  peakApprox[j] = tempHist->GetXaxis()->GetBinCenter(binWithMax);
