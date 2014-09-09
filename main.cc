@@ -15,12 +15,14 @@
 // See http://root.cern.ch/phpBB3//viewtopic.php?f=3&t=11740#p50908
 // for a modified version working with Fumili or GSLMultiFit 
 // N.B. this macro must be compiled with ACliC 
-// Author: L. Moneta - Dec 2010
+// Author: L. Moneta - Dec 2010 
 //~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
 //~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
 
 #include "MultiPeakFitter.hh"
 #include "DeclareFitter.hh"
+#include <getopt.h>
+#include "TKey.h"
 
 int long long printBranchAddress(std::vector<int> fBranch){
   int long long branchAddress = 0;
@@ -29,10 +31,42 @@ int long long printBranchAddress(std::vector<int> fBranch){
   printf("Branch Address: %lld\n", branchAddress);
   return branchAddress;
 }
+
+int main(int argc, char *argv[]){
+
+  int oVal, index;
+  int channel, chooseHtail;
+  while( (oVal=getopt(argc, argv,"c:h:")) != -1 )
+    switch (oVal){
+      case 'c':
+        channel = atoi(optarg);
+        break;
+      case 'h':
+        chooseHtail = atoi(optarg);
+        break;
+      case '?':
+        if((optopt == 'c') || (optopt == 'h')){
+          printf("Option -%c requires an argument. Usage:\n", optopt);
+          printf(" -c [channel]\n -h [hTail value * 10] ('-h 999' = test for Htail value)\n");
+          }
+        else if(isprint(optopt))
+          printf("Unknown option '-%c'\n",optopt);
+        else
+          printf("Unknown option character '\\x%x'\n",optopt);
+        return 1;
+      default:
+        abort ();
+      }
+  for(index=optind; index<argc; index++)
+	printf("Non-option argument %s\n",argv[index]);
+
+  printf("channel = %d\n",channel);
+  printf("hTail = %d\n",chooseHtail);
+  if(chooseHtail==999) printf("Testing for Htail values\n");
+  else printf("Initializing Htail = %.1f\n",chooseHtail/10.);
   
-int main(){
-  TFile* fileData = TFile::Open("~/MultiPeakFitter/3500_3537/Runs_40003500_40003537.root");
-  TH1D* detector = (TH1D*)fileData->Get("Ch112"); 
+  TFile* fileData = TFile::Open("~/MultiPeakFitter/Runs_40004126_40004155.root");
+  TH1D* detector = (TH1D*)fileData->Get( Form("Ch%d",channel) ); 
   const int numberPeaksToFit = 6;
   int setOfRanges[] = { 272, 283, 295, 305, 577, 590, 721, 734, 853, 868, 2600, 2628 };
 
@@ -49,15 +83,13 @@ int main(){
   	}
 
   //int long long stopCommand = 81; 
-  int long long stopCommand = 1;
+  //int long long stopCommand = 1;
   int long long bAddress;
   std::vector<int> branch, statuses;
   std::vector<double> minFuncVal;
   int status;
   MultiPeakFitter mpf(*detector, numberPeaksToFit, setOfRanges); 
-  int chooseHtail = 2;
-  if(chooseHtail==999) printf("Testing for Htail values\n");
-  else printf("Initializing Htail = %.1f\n",chooseHtail/10.);
+
   char hTailChoice[100]; 
   sprintf(hTailChoice,"full_fixedHtail_linear_%02d",chooseHtail);
   
@@ -68,8 +100,21 @@ int main(){
   status = (mpf.minimizerFlag==1) ? 0 : resultsForTail.IsValid();
   branch.push_back(status);  
   bAddress = printBranchAddress(branch);
-  if(branch[0] == 0) return 0;
+  //if(branch[0] == 0) return 0;
   
+  if(branch[0] == 0){
+    mpf.chooseFit("gaus_const");
+    recentResults = mpf.doFit();
+    resultsForTail = mpf.results;
+    status = (mpf.minimizerFlag==1) ? 0 : resultsForTail.IsValid();
+    branch.push_back(status);  
+    bAddress = printBranchAddress(branch);
+    if(branch[1] == 0){
+      recentResults.PrintFitResults();
+      return 0;
+      }
+    }
+    
   if(chooseHtail!=999){
     if(chooseHtail==0){
       printf("Accepting full_fixedHtail_00. Doing final fit with Minos\n");
