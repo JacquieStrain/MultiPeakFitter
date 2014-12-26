@@ -64,6 +64,7 @@ void PrintResults::PrintFitResults(){
   double cov_s0_mu[numberPeaksToFit], cov_s1_mu[numberPeaksToFit], cov_s2_mu[numberPeaksToFit];
   double cov_bT_mu[numberPeaksToFit], cov_bH_mu[numberPeaksToFit];
   double cov_mT_mu[numberPeaksToFit], cov_mH_mu[numberPeaksToFit];
+  double FWHM[numberPeaksToFit], dFWHM[numberPeaksToFit];
   for(int i=0; i<numberPeaksToFit; i++){
   	alpha[i] = resultToPrint.Parameter(10+i*6);
   	beta[i] = resultToPrint.Parameter(11+i*6);
@@ -239,17 +240,20 @@ void PrintResults::PrintFitResults(){
   bkgdS = new TF1*[numberPeaksToFit];
   signalG = new TF1*[numberPeaksToFit];
   signalT = new TF1*[numberPeaksToFit];
+  signal = new TF1*[numberPeaksToFit];
   fArray = new TF1*[numberPeaksToFit];
   for(int i=0; i<numberPeaksToFit; i++){
-  	bkgdQ[i] = new TF1("",
+  	bkgdQ[i] = new TF1(Form("pk%d_bkgdQ",i),
   		"[0]+[1]*x+[2]*pow(x,2.)", rArray[2*i], rArray[2*i+1]);
-  	bkgdS[i] = new TF1("",
+  	bkgdS[i] = new TF1(Form("pk%d_bkgdS",i),
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
-  	signalG[i] = new TF1("",
+  	signalG[i] = new TF1(Form("pk%d_signalG",i),
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*(1-[7])/([6]*sqrt(2.*TMath::Pi()))*exp(-0.5*pow((x-[5])/[6],2.))", rArray[2*i], rArray[2*i+1]);
-  	signalT[i] = new TF1("",
+  	signalT[i] = new TF1(Form("pk%d_signalT",i),
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*[7]/(2*[8])*exp((x-[5])/[8]+pow([6]/(sqrt(2.)*[8]),2.))*TMath::Erfc((x-[5])/(sqrt(2.)*[6])+[6]/([8]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
-  	fArray[i] = new TF1("",
+  	signal[i] = new TF1(Form("pk%d_signal",i),
+  		"[0]*(1-[1])/([2]*sqrt(2.*TMath::Pi()))*exp(-0.5*pow((x-[3])/[2],2.))+[0]*[1]/(2*[4])*exp((x-[3])/[4]+pow([2]/(sqrt(2.)*[4]),2.))*TMath::Erfc((x-[3])/(sqrt(2.)*[2])+[2]/([4]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
+  	fArray[i] = new TF1(Form("pk%d_fArray",i),
   		"[0]+[1]*x+[2]*pow(x,2.)+[3]*[4]*TMath::Erfc((x-[5])/([6]*sqrt(2.)))+[3]*(1-[7])/([6]*sqrt(2.*TMath::Pi()))*exp(-0.5*pow((x-[5])/[6],2.))+[3]*[7]/(2*[8])*exp((x-[5])/[8]+pow([6]/(sqrt(2.)*[8]),2.))*TMath::Erfc((x-[5])/(sqrt(2.)*[6])+[6]/([8]*sqrt(2.)))", rArray[2*i], rArray[2*i+1]);
   		
   	bkgdQ[i]->FixParameter(0, alpha[i]);
@@ -283,6 +287,18 @@ void PrintResults::PrintFitResults(){
   	signalT[i]->FixParameter(7, Htail[i]);
   	signalT[i]->FixParameter(8, Tau[i]);
   	
+  	signal[i]->FixParameter(0, Area[i]);
+  	signal[i]->FixParameter(1, Htail[i]);
+  	signal[i]->FixParameter(2, Sigma[i]);
+  	signal[i]->FixParameter(3, Mu[i]);
+  	signal[i]->FixParameter(4, Tau[i]);
+  	MaxXFit = signal[i]->GetMaximumX();
+    HalfMaxXFit = signal[i]->Eval(MaxXFit)/2.;
+    lowFWHM = signal[i]->GetX(HalfMaxXFit, MaxXFit-5.*SqrtVar[i], MaxXFit);
+    highFWHM = signal[i]->GetX(HalfMaxXFit, MaxXFit, MaxXFit+5.*SqrtVar[i]);
+    FWHM[i] = highFWHM - lowFWHM;
+    dFWHM[i] = dSqrtVar[i]*FWHM[i]/SqrtVar[i];
+  	
   	fArray[i]->FixParameter(0, alpha[i]);
   	fArray[i]->FixParameter(1, beta[i]);
   	fArray[i]->FixParameter(2, gamma[i]);
@@ -307,6 +323,7 @@ void PrintResults::PrintFitResults(){
   	hArray[i]->GetListOfFunctions()->Add(signalG[i]);
   	hArray[i]->GetListOfFunctions()->Add(signalT[i]);
   	hArray[i]->Draw();
+  	hArray[i]->GetListOfFunctions()->Add(signal[i]);
   	}
 
   sprintf(outputFileName, "%s_fit.png", fitOpt.c_str());
@@ -321,7 +338,7 @@ void PrintResults::PrintFitResults(){
   	gHtail->GetXaxis()->SetTitle("Peak Centroid (keV)");
   	gHtail->GetYaxis()->SetTitle("Htail");
   	gHtail->Draw("ap");	
-  fHtail = new TF1("", "[0]+[1]*x", rArray[0], rArray[2*numberPeaksToFit-1]);
+  fHtail = new TF1("fHtail", "[0]+[1]*x", rArray[0], rArray[2*numberPeaksToFit-1]);
   	fHtail->FixParameter(0, bH);
   	fHtail->FixParameter(1, mH);
   	fHtail->SetLineColor(32);
@@ -336,7 +353,7 @@ void PrintResults::PrintFitResults(){
   	gTau->GetXaxis()->SetTitle("Peak Centroid (keV)");
   	gTau->GetYaxis()->SetTitle("Tau (keV)");
   	gTau->Draw("ap");
-  fTau = new TF1("", "[0]+[1]*x", rArray[0], rArray[2*numberPeaksToFit-1]);
+  fTau = new TF1("fTau", "[0]+[1]*x", rArray[0], rArray[2*numberPeaksToFit-1]);
   	fTau->FixParameter(0, bT);
   	fTau->FixParameter(1, mT);
   	fTau->SetLineColor(32);
@@ -351,7 +368,7 @@ void PrintResults::PrintFitResults(){
   	gSigma->GetXaxis()->SetTitle("Peak Centroid (keV)");
   	gSigma->GetYaxis()->SetTitle("Sigma (keV)");
   	gSigma->Draw("ap");
-  fSigma = new TF1("", "sqrt( pow([0],2.) + pow([1],2.)*x + pow([2]*x,2.) )", rArray[0], rArray[2*numberPeaksToFit-1]);
+  fSigma = new TF1("fSigma", "sqrt( pow([0],2.) + pow([1],2.)*x + pow([2]*x,2.) )", rArray[0], rArray[2*numberPeaksToFit-1]);
   	fSigma->FixParameter(0, s0);
   	fSigma->FixParameter(1, s1);
   	fSigma->FixParameter(2, s2);
@@ -360,6 +377,34 @@ void PrintResults::PrintFitResults(){
   c1->Print("sigma.png");
   c1->Clear();
   
+  gSqrtVar = new TGraphErrors(numberPeaksToFit, Centroid, SqrtVar, dCentroid, dSqrtVar);
+  	gSqrtVar->SetMarkerColor(14);
+  	gSqrtVar->SetMarkerSize(0.8);
+  	gSqrtVar->SetMarkerStyle(23);
+  	gSqrtVar->GetXaxis()->SetTitle("Peak Centroid (keV)");
+  	gSqrtVar->GetYaxis()->SetTitle("SqrtVar (keV)");
+  	gSqrtVar->Draw("ap");
+  c1->Print("sqrtVar.png");
+  c1->Clear();  
+  
+  gFWHM = new TGraphErrors(numberPeaksToFit, Centroid, FWHM, dCentroid, dFWHM);
+  	gFWHM->SetMarkerColor(14);
+  	gFWHM->SetMarkerSize(0.8);
+  	gFWHM->SetMarkerStyle(23);
+  	gFWHM->GetXaxis()->SetTitle("Peak Centroid (keV)");
+  	gFWHM->GetYaxis()->SetTitle("FWHM (keV)");
+  	gFWHM->Draw("ap");
+  fFWHM = new TF1("fFWHM", "sqrt( pow([0],2.) + pow([1],2.)*x + pow([2]*x,2.) )", rArray[0], rArray[2*numberPeaksToFit-1]);
+  	fFWHM->SetParameter(0, s0);
+  	fFWHM->SetParameter(1, s1);
+  	fFWHM->SetParameter(2, s2);
+  	fFWHM->SetLineColor(32);
+  	
+  	gFWHM->Fit("fFWHM","RN");
+  	fFWHM->Draw("same");
+  c1->Print("FWHM.png");
+  c1->Clear();
+    
   gHstep = new TGraphErrors(numberPeaksToFit, Centroid, Hstep, dCentroid, dHstep);
   	gHstep->SetMarkerColor(14);
   	gHstep->SetMarkerSize(0.8);
@@ -369,8 +414,17 @@ void PrintResults::PrintFitResults(){
   	gHstep->Draw("ap");    
   c1->Print("Hstep.png");
   
+  hPar = new TH1D("hPar","",resultToPrint.NPar(),0.,resultToPrint.NPar());
+  hParErr = new TH1D("hParErr","",resultToPrint.NPar(),0.,resultToPrint.NPar());
+  for(int i=0; i<resultToPrint.NPar(); i++){
+    hPar->SetBinContent(hPar->FindBin(i),resultToPrint.Parameter(i));
+    hParErr->SetBinContent(hParErr->FindBin(i),resultToPrint.ParError(i));
+    }
+  
   sprintf(outputFileName, "%s_fit.root", fitOpt.c_str());
   rootResults = new TFile(outputFileName,"recreate");
+  hPar->Write("hPar");
+  hParErr->Write("hParErr");
   for(int i=0; i<numberPeaksToFit; i++){
   	sprintf(histTitle,"hPeak%d", i);
   	hArray[i]->Write(histTitle);
@@ -378,6 +432,8 @@ void PrintResults::PrintFitResults(){
   gHtail->Write("gHtail");
   gTau->Write("gTau");
   gSigma->Write("gSigma");
+  gSqrtVar->Write("gSqrtVar");
+  gFWHM->Write("gFWHM");
   gHstep->Write("gHstep");
   rootResults->Close();
   delete c1;
