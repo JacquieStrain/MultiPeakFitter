@@ -35,14 +35,17 @@ int long long printBranchAddress(std::vector<int> fBranch){
 int main(int argc, char *argv[]){
 
   int oVal, index;
-  int channel, chooseHtail;
-  while( (oVal=getopt(argc, argv,"c:h:")) != -1 )
+  int channel, chooseHtail, printAll=0;
+  while( (oVal=getopt(argc, argv,"ac:h:")) != -1 )
     switch (oVal){
       case 'c':
         channel = atoi(optarg);
         break;
       case 'h':
         chooseHtail = atoi(optarg);
+        break;
+      case 'a':
+        printAll=1;
         break;
       case '?':
         if((optopt == 'c') || (optopt == 'h')){
@@ -62,14 +65,35 @@ int main(int argc, char *argv[]){
 
   printf("channel = %d\n",channel);
   printf("hTail = %d\n",chooseHtail);
+  printf("Printing sigma contours? : %s\n",(printAll==1)?"yes":"no"); 
   if(chooseHtail==999) printf("Testing for Htail values\n");
   else printf("Initializing Htail = %.1f\n",chooseHtail/10.);
   
-  TFile* fileData = TFile::Open("~/MultiPeakFitter/Runs_40004126_40004155.root");
+  TFile* fileData = TFile::Open("~/SURF_Data/surfprot/Runs_4126_4155_trapEcuts.root");
   TH1D* detector = (TH1D*)fileData->Get( Form("Ch%d",channel) ); 
-  const int numberPeaksToFit = 6;
-  int setOfRanges[] = { 272, 283, 295, 305, 577, 590, 721, 734, 853, 868, 2600, 2628 };
-
+  const int numberPeaksToFit = 5;
+  //int setOfRanges[] = { 270, 283, 293, 306, 572, 593, 852, 869, 2598, 2632 };
+  int pkApproxAt[numberPeaksToFit] = { 277, 300, 583, 860, 2614 };
+  int setOfRanges[numberPeaksToFit*2];
+  
+  TH1D *hRange = (TH1D*)detector->Clone("h_Range");
+  hRange->SetDirectory(0);
+  int delta = 0;
+  int maxBin[numberPeaksToFit];
+  double upperHM[numberPeaksToFit], lowerHM[numberPeaksToFit], sigmaApprox[numberPeaksToFit];
+  for(int i=0; i<numberPeaksToFit; i++){
+    hRange->GetXaxis()->SetRangeUser( pkApproxAt[i]*0.99, pkApproxAt[i]*1.01 );
+    maxBin[i] = hRange->GetMaximumBin();
+    while( hRange->GetBinContent(maxBin[i]+delta) > (0.5*hRange->GetBinContent(maxBin[i])) ) delta++;
+    upperHM[i] = ( hRange->GetXaxis()->GetBinCenter(maxBin[i]+delta) + hRange->GetXaxis()->GetBinCenter(maxBin[i]+delta-1) )/2.;
+    delta = 0;
+    while( hRange->GetBinContent(maxBin[i]-delta) > (0.5*hRange->GetBinContent(maxBin[i])) ) delta++;
+    lowerHM[i] = ( hRange->GetXaxis()->GetBinCenter(maxBin[i]-delta) + hRange->GetXaxis()->GetBinCenter(maxBin[i]-delta+1) )/2.;    
+    sigmaApprox[i] = (upperHM[i]-lowerHM[i])/(2.*sqrt(2.*log(2)));
+    setOfRanges[2*i] = pkApproxAt[i]-10.*sigmaApprox[i];
+    setOfRanges[2*i+1] = pkApproxAt[i]+10.*sigmaApprox[i];
+    }
+    
   if((sizeof(setOfRanges)/sizeof(*setOfRanges))/2. != numberPeaksToFit){ 
   	printf("setOfRanges does not match number of peaks. Exiting \n");
   	return 0;
@@ -82,8 +106,6 @@ int main(int argc, char *argv[]){
   	else printf("%d-%d, ", setOfRanges[2*i], setOfRanges[2*i+1]);
   	}
 
-  //int long long stopCommand = 81; 
-  //int long long stopCommand = 1;
   int long long bAddress;
   std::vector<int> branch, statuses;
   std::vector<double> minFuncVal;
@@ -100,7 +122,6 @@ int main(int argc, char *argv[]){
   status = (mpf.minimizerFlag==1) ? 0 : resultsForTail.IsValid();
   branch.push_back(status);  
   bAddress = printBranchAddress(branch);
-  //if(branch[0] == 0) return 0;
   
   if(branch[0] == 0){
     mpf.chooseFit("gaus_const");
@@ -111,7 +132,7 @@ int main(int argc, char *argv[]){
     bAddress = printBranchAddress(branch);
     if(branch[1] == 0){
       recentResults.PrintFitResults();
-      return 0;
+      return 1;
       }
     }
     
@@ -120,12 +141,12 @@ int main(int argc, char *argv[]){
       printf("Accepting full_fixedHtail_00. Doing final fit with Minos\n");
       mpf.previousFitResults(resultsForTail);
       mpf.chooseFit("full_fixedHtail_00");	
-	  recentResults = mpf.doFit(1);
+	  recentResults = mpf.doFit(1,printAll);
 	  ROOT::Fit::FitResult resultFinal = mpf.results;
         printf("\t Minimum function value = %.2f\n",resultFinal.MinFcnValue());
       status = (mpf.minimizerFlag==1) ? 0 : resultFinal.IsValid();
       if(status==1) recentResults.PrintFitResults();
-      return 1;
+      return 0;
 	  }
     
     mpf.previousFitResults(resultsForTail);
@@ -136,7 +157,7 @@ int main(int argc, char *argv[]){
     status = (mpf.minimizerFlag==1) ? 0 : result1.IsValid();
     branch.push_back(status);
     bAddress = printBranchAddress(branch);
-    if(branch[1]==0) return 0;
+    if(branch[1]==0) return 1;
 
     mpf.previousFitResults(result1);
 	mpf.chooseFit("full_linear");
@@ -173,14 +194,14 @@ int main(int argc, char *argv[]){
 		mpf.previousFitResults(result2);
 		mpf.chooseFit("full_linear");
         }
-      recentResults = mpf.doFit(1);  
+      recentResults = mpf.doFit(1,printAll);  
 	  ROOT::Fit::FitResult resultFinal = mpf.results;
         printf("\t Minimum function value = %.2f\n",resultFinal.MinFcnValue());
       status = (mpf.minimizerFlag==1) ? 0 : resultFinal.IsValid();
       if(status==1) recentResults.PrintFitResults();
-      return 1;
+      return 0;
 	  }
-	if(branch[3]==0) return 0;
+	if(branch[3]==0) return 1;
 	mpf.previousFitResults(result3);
 	mpf.chooseFit("full_linear");
 	recentResults = mpf.doFit();
@@ -194,12 +215,12 @@ int main(int argc, char *argv[]){
 	  printf("Accepting full_const. Doing final fit with Minos\n");
 	  mpf.previousFitResults(result3);
 	  mpf.chooseFit("full_const");
-	  recentResults = mpf.doFit(1);
+	  recentResults = mpf.doFit(1,printAll);
       ROOT::Fit::FitResult resultFinal = mpf.results;
         printf("\t Minimum function value = %.2f\n",resultFinal.MinFcnValue());
       status = (mpf.minimizerFlag==1) ? 0 : resultFinal.IsValid();
       if(status==1) recentResults.PrintFitResults();
-	  return 1;
+	  return 0;
 	  }
 	mpf.previousFitResults(result4);
 	mpf.chooseFit("full");
@@ -220,12 +241,12 @@ int main(int argc, char *argv[]){
 	  mpf.previousFitResults(result5);
 	  mpf.chooseFit("full");
 	  }
-    recentResults = mpf.doFit(1);  
+    recentResults = mpf.doFit(1,printAll);  
     ROOT::Fit::FitResult resultFinal = mpf.results;
 	  printf("\t Minimum function value = %.2f\n",resultFinal.MinFcnValue());
 	status = (mpf.minimizerFlag==1) ? 0 : resultFinal.IsValid();
     if(status==1) recentResults.PrintFitResults();
-	return 1;  
+	return 0;  
     }
   
   recentResults.PrintFitResults();
@@ -283,6 +304,6 @@ int main(int argc, char *argv[]){
   printf("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*\n");
   for(int i=0; i<statuses.size(); i++)
     printf("hTail = %.1f \t status = %d \t minFuncVal = %.1f\n", 0.0+0.2*i, statuses[i], minFuncVal[i]);
-  return 1;
+  return 0;
   
 }

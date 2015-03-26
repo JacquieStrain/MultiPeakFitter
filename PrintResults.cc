@@ -323,12 +323,13 @@ void PrintResults::PrintFitResults(){
   	hArray[i]->GetListOfFunctions()->Add(signalG[i]);
   	hArray[i]->GetListOfFunctions()->Add(signalT[i]);
   	hArray[i]->Draw();
-  	hArray[i]->GetListOfFunctions()->Add(signal[i]);
   	}
 
   sprintf(outputFileName, "%s_fit.png", fitOpt.c_str());
   c1->Print(outputFileName);
   c1->Clear();
+  
+  for(int i=0; i<numberPeaksToFit; i++) hArray[i]->GetListOfFunctions()->Add(signal[i]);
   
   //Plot trends wrt PkCentroid
   gHtail = new TGraphErrors(numberPeaksToFit, Centroid, Htail, dCentroid, dHtail);
@@ -414,15 +415,15 @@ void PrintResults::PrintFitResults(){
   	gHstep->Draw("ap");    
   c1->Print("Hstep.png");
   
-  hPar = new TH1D("hPar","",resultToPrint.NPar(),0.,resultToPrint.NPar());
-  hParErr = new TH1D("hParErr","",resultToPrint.NPar(),0.,resultToPrint.NPar());
+  hPar = new TH1D(Form("hPar_%.0f",bT*100),"",resultToPrint.NPar(),0.,resultToPrint.NPar());
+  hParErr = new TH1D(Form("hParErr_%.0f",bT*100),"",resultToPrint.NPar(),0.,resultToPrint.NPar());
   for(int i=0; i<resultToPrint.NPar(); i++){
     hPar->SetBinContent(hPar->FindBin(i),resultToPrint.Parameter(i));
     hParErr->SetBinContent(hParErr->FindBin(i),resultToPrint.ParError(i));
     }
   
   sprintf(outputFileName, "%s_fit.root", fitOpt.c_str());
-  rootResults = new TFile(outputFileName,"recreate");
+  rootResults = new TFile(outputFileName,"update");
   hPar->Write("hPar");
   hParErr->Write("hParErr");
   for(int i=0; i<numberPeaksToFit; i++){

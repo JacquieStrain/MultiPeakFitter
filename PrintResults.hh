@@ -32,16 +32,17 @@ class PrintResults
   double dSVdbH, dSVdbT, dSVdmH, dSVdmT, dSVdMu, dSVds0, dSVds1, dSVds2;
   double dTdbH, dTdbT, dTdmH, dTdmT, dTdMu;
   double htailComp, mH, mT, Numerator, s0, s1, s2, sqrtTerm, tauComp;
+  double HalfMaxXFit, highFWHM, lowFWHM, MaxXFit;
  
   char histTitle[10], outputFileName[100]; 
   std::string fitOpt;
   
   ROOT::Fit::FitResult resultToPrint;
   TCanvas *c1;
-  TF1 **bkgdQ, **bkgdS, **fArray, *fHtail, *fSigma, *fTau, **signalG, **signalT;
+  TF1 **bkgdQ, **bkgdS, **fArray, *fFWHM, *fHtail, *fSigma, *fTau, **signal, **signalG, **signalT;
   TFile *rootResults;
-  TGraphErrors *gHstep, *gHtail, *gSigma, *gTau;
-  TH1D** hArray;
+  TGraphErrors *gFWHM, *gHstep, *gHtail, *gSigma, *gSqrtVar, *gTau;
+  TH1D **hArray, *hPar, *hParErr;
   
   public:
 	PrintResults( std::string ffitOpt, ROOT::Fit::FitResult r2p, TH1D* histArray[], int* rangeArray );
